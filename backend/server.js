@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const { initializeSchema } = require('./src/utils/initializeSchema');
 const { ensureInitialAdmin } = require('./src/utils/ensureInitialAdmin');
 
 dotenv.config();
@@ -41,6 +42,7 @@ const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
+    await initializeSchema();
     await ensureInitialAdmin();
     app.listen(PORT, () => {
       console.log(`Servidor corriendo en puerto ${PORT}`);
