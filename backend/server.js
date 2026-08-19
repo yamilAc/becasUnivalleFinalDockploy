@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const { ensureInitialAdmin } = require('./src/utils/ensureInitialAdmin');
 
 dotenv.config();
 
@@ -37,6 +38,17 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`);
-});
+
+async function startServer() {
+  try {
+    await ensureInitialAdmin();
+    app.listen(PORT, () => {
+      console.log(`Servidor corriendo en puerto ${PORT}`);
+    });
+  } catch (error) {
+    console.error('No fue posible inicializar el administrador:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

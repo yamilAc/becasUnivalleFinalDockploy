@@ -1,6 +1,8 @@
 services:
   db:
-    image: mysql:8.0
+    build:
+      context: .
+      dockerfile: db/Dockerfile
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en el entorno de despliegue}
@@ -27,6 +29,8 @@ services:
       DB_NAME: ${MYSQL_DATABASE:-sistema_becas}
       JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET en el entorno de despliegue}
       JWT_EXPIRE: ${JWT_EXPIRE:-7d}
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:?Define INITIAL_ADMIN_EMAIL en el entorno de despliegue}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:?Define INITIAL_ADMIN_PASSWORD en el entorno de despliegue}
     volumes:
       - uploads_data:/app/uploads
 

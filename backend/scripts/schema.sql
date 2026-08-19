@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS roles (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(50) NOT NULL UNIQUE
 );
-
 INSERT INTO roles (id, nombre) VALUES
   (1, 'docente'),
   (2, 'auxiliar'),
@@ -59,11 +58,3 @@ CREATE TABLE IF NOT EXISTS becas (
   CONSTRAINT fk_becas_modificado_por FOREIGN KEY (modificado_por) REFERENCES usuarios(id)
 );
 
--- Usuarios de prueba (contraseña: 123456)
-INSERT INTO usuarios (nombre, apellido, email, password, role_id)
-VALUES ('Admin', 'Univalle', 'admin@docent.univalle.edu', '$2a$10$7kP2eTPTB5NaCOPf8QOLruyPmYCeN7xE/.yDK07RKUonEiqf7ok4e', 1)
-ON DUPLICATE KEY UPDATE email = email;
-
-INSERT INTO usuarios (nombre, apellido, email, password, role_id)
-VALUES ('Juan', 'Auxiliar', 'juan@aux.univalle.edu', '$2a$10$7kP2eTPTB5NaCOPf8QOLruyPmYCeN7xE/.yDK07RKUonEiqf7ok4e', 2)
-ON DUPLICATE KEY UPDATE email = email;
