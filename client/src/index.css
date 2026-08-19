@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+@theme {
+  --color-univalle-guinda: #967292; 
+  --color-univalle-navbar: #B59BB2; 
+  --color-univalle-bg: #9D9D9D;
+}
+
+body {
+  @apply bg-[--color-univalle-bg];
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+.page-surface {
+  background-color: #f4f4f4;
+  background-image:
+    radial-gradient(circle, rgba(69, 69, 69, 0.07) 0 5px, transparent 6px),
+    linear-gradient(135deg, transparent 0 30%, rgba(181, 155, 178, 0.16) 30% 48%, transparent 48%),
+    linear-gradient(45deg, transparent 0 58%, rgba(124, 124, 124, 0.08) 58% 72%, transparent 72%);
+  background-size: 24px 24px, 100% 100%, 100% 100%;
+}
+
+/* Animaciones personalizadas */
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.5s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.5s ease-out;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Scroll suave */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hover effects */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.1);
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes practicasCarousel {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-50% - 10px));
+  }
+}
+
+.animate-practicas-carousel {
+  width: max-content;
+  animation: practicasCarousel 28s linear infinite;
+}
+
+.animate-practicas-carousel:hover {
+  animation-play-state: paused;
+}

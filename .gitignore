@@ -1,0 +1,5 @@
+node_modules/
+client/dist/
+backend/.env
+backend/uploads/
+backend/import_becas_marzo_2026/
