@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const { initializeSchema } = require('./src/utils/initializeSchema');
 const { ensureInitialAdmin } = require('./src/utils/ensureInitialAdmin');
+const { seedInitialBecas } = require('./src/utils/seedInitialBecas');
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ async function startServer() {
   try {
     await initializeSchema();
     await ensureInitialAdmin();
+    await seedInitialBecas();
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Servidor corriendo en puerto ${PORT}`);
     });
