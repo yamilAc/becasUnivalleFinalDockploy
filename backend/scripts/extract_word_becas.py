@@ -75,6 +75,24 @@ def row_links(row) -> list[str]:
     return list(dict.fromkeys(links))
 
 
+def row_image_links(row) -> list[str]:
+    """Obtiene enlaces que Word guarda dentro de una imagen o dibujo.
+
+    Word no siempre representa estos enlaces como ``w:hyperlink``. En las
+    imágenes modernas los guarda como ``a:hlinkClick`` dentro de ``w:drawing``.
+    """
+    links: list[str] = []
+    for cell in row.cells:
+        for drawing in cell._tc.xpath('.//w:drawing'):
+            for hyperlink in drawing.xpath('.//a:hlinkClick'):
+                rel_id = hyperlink.get(REL_ID)
+                if rel_id:
+                    target = relationship_target(cell.part, rel_id)
+                    if target:
+                        links.append(target)
+    return list(dict.fromkeys(links))
+
+
 def row_image_rel_ids(row) -> list[str]:
     relation_ids: list[str] = []
     for cell in row.cells:
@@ -129,7 +147,9 @@ def main() -> None:
             if not kind or not institution or not country:
                 continue
 
-            links = row_links(row)
+            text_links = row_links(row)
+            image_links = row_image_links(row)
+            links = list(dict.fromkeys([*text_links, *image_links]))
             image_name = None
             for rel_id in row_image_rel_ids(row):
                 if rel_id in images_written:
@@ -161,6 +181,7 @@ def main() -> None:
                 "descripcion": " | ".join(description_parts)[:5000] or None,
                 "linkOficial": links[0] if links else None,
                 "image": image_name,
+                "linkFromImage": bool(image_links),
                 "source": {"table": table_index, "row": row_index},
             })
 
@@ -170,10 +191,12 @@ def main() -> None:
     )
     with_images = sum(item["image"] != "imagen_default.png" for item in opportunities)
     with_links = sum(bool(item["linkOficial"]) for item in opportunities)
+    with_image_links = sum(item["linkFromImage"] for item in opportunities)
     print(json.dumps({
         "opportunities": len(opportunities),
         "with_images": with_images,
         "with_links": with_links,
+        "with_image_links": with_image_links,
         "output": str(output_dir / "becas.json"),
     }, ensure_ascii=False))
 

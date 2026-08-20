@@ -11,7 +11,7 @@ async function seedInitialBecas() {
 
   const seedDir = path.join(__dirname, '../../seed_data');
   const imageSource = path.join(seedDir, 'images');
-  const imageDestination = path.join(__dirname, '../../../uploads/importadas');
+  const imageDestination = path.join(__dirname, '../../uploads/importadas');
   const data = JSON.parse(await fs.readFile(path.join(seedDir, 'becas.json'), 'utf8'));
   const [[admin]] = await pool.execute(
     'SELECT id FROM usuarios WHERE role_id = 1 AND activo = 1 ORDER BY id LIMIT 1'
