@@ -30,7 +30,7 @@ async function seedInitialBecas() {
   try {
     for (const beca of data) {
       await connection.execute(sql, [
-        beca.tipo, beca.titulo, beca.institucion, beca.pais, beca.area,
+        beca.tipo, beca.titulo, beca.institucion, beca.pais, beca.area?.slice(0, 100) || null,
         beca.descripcion, beca.link_oficial, beca.logo, admin.id,
       ]);
     }

@@ -28,7 +28,7 @@ async function restoreLinkedImageBecas() {
       );
       if (existing.length) continue;
       await connection.execute(sql, [
-        beca.tipo, beca.titulo, beca.institucion, beca.pais, beca.area,
+        beca.tipo, beca.titulo, beca.institucion, beca.pais, beca.area?.slice(0, 100) || null,
         beca.descripcion, beca.link_oficial, beca.logo, admin.id,
       ]);
       restored += 1;

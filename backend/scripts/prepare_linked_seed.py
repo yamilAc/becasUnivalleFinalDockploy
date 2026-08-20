@@ -23,7 +23,9 @@ def main() -> None:
             "titulo": item["titulo"],
             "institucion": item["institucion"],
             "pais": item["pais"],
-            "area": item.get("area"),
+            # La columna `area` en MySQL es VARCHAR(100); el detalle completo
+            # permanece en `descripcion`.
+            "area": (item.get("area") or "")[:100] or None,
             "descripcion": item.get("descripcion"),
             "link_oficial": link,
             "logo": f"/uploads/importadas/{image}",
