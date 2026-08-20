@@ -237,7 +237,7 @@ const Dashboard = () => {
         {/* Stats Cards con Ã­conos profesionales */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           <StatCard title="Total Becas" value={stats.totalBecas} color="from-[#967292] to-[#9C7A98]" delay={0.1} icon={Trophy} />
-          <StatCard title="Estudiantes Beneficiados" value={stats.estudiantesBeneficiados} color="from-[#614B59] to-[#6A5663]" delay={0.3} icon={Users} />
+          <StatCard title="Numero De Visitas" value={stats.estudiantesBeneficiados} color="from-[#614B59] to-[#6A5663]" delay={0.3} icon={Users} />
           <StatCard title="Total Países de Convenio" value={stats.paisesDisponibles} color="from-[#6A5663] to-[#454545]" delay={0.4} icon={Globe} />
         </div>
 
