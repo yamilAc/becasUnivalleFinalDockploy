@@ -29,6 +29,9 @@ const Reportes = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipo, setFilterTipo] = useState('');
+  const [filterAnio, setFilterAnio] = useState('');
+  const [filterMes, setFilterMes] = useState('');
+  const [filterCreador, setFilterCreador] = useState('');
   const [user, setUser] = useState(null);
   const itemsPerPage = 10;
 
@@ -110,7 +113,7 @@ const Reportes = () => {
     const becasFiltradas = becas.filter(beca => {
       if (!beca.created_at) return false;
       const fecha = new Date(beca.created_at);
-      return (fecha.getUTCMonth() + 1 === mes && fecha.getUTCFullYear() === anio);
+      return (fecha.getMonth() + 1 === mes && fecha.getFullYear() === anio);
     });
 
     const doc = new jsPDF();
@@ -261,14 +264,86 @@ const Reportes = () => {
     }
   };
 
+  // Año y mes en que se añadió cada beca
+  const getFechaAgregada = (fecha) => {
+    if (!fecha) return null;
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) return null;
+    return { anio: String(d.getFullYear()), mes: String(d.getMonth() + 1) };
+  };
+
+  const NOMBRES_MESES = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+
+  // Años con becas (del más reciente al más antiguo)
+  const anios = [...new Set(
+    becas.map(beca => getFechaAgregada(beca.created_at)?.anio).filter(Boolean)
+  )].sort((a, b) => b - a);
+
+  // Meses con becas (dentro del año elegido, si hay uno)
+  const meses = [...new Set(
+    becas
+      .map(beca => getFechaAgregada(beca.created_at))
+      .filter(f => f && (!filterAnio || f.anio === filterAnio))
+      .map(f => f.mes)
+  )]
+    .sort((a, b) => a - b)
+    .map(mes => ({ value: mes, label: NOMBRES_MESES[Number(mes) - 1] }));
+
+  // Personas que registraron becas (docentes y auxiliares), por nombre
+  const creadores = Object.values(
+    becas.reduce((acc, beca) => {
+      if (beca.creado_por == null) return acc;
+      const id = String(beca.creado_por);
+      if (!acc[id]) {
+        acc[id] = { value: id, label: (beca.creador_nombre || '').trim() || `Usuario #${id}`, total: 0 };
+      }
+      acc[id].total += 1;
+      return acc;
+    }, {})
+  ).sort((a, b) => a.label.localeCompare(b.label, 'es'));
+
+  const cambiarAnio = (anio) => {
+    setFilterAnio(anio);
+    // Si el mes elegido no tiene becas en ese año, se limpia
+    if (anio && filterMes && !becas.some(beca => {
+      const f = getFechaAgregada(beca.created_at);
+      return f && f.anio === anio && f.mes === filterMes;
+    })) {
+      setFilterMes('');
+    }
+  };
+
+  // Al cambiar cualquier filtro, volver a la primera página
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterTipo, filterAnio, filterMes, filterCreador]);
+
   // Filtrar becas
   const filteredBecas = becas.filter(beca => {
     const matchesSearch = beca.titulo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           beca.institucion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           beca.pais?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTipo = !filterTipo || beca.tipo === filterTipo;
-    return matchesSearch && matchesTipo;
+    let matchesFecha = true;
+    if (filterAnio || filterMes) {
+      const f = getFechaAgregada(beca.created_at);
+      matchesFecha = Boolean(f) && (!filterAnio || f.anio === filterAnio) && (!filterMes || f.mes === filterMes);
+    }
+    const matchesCreador = !filterCreador || String(beca.creado_por) === filterCreador;
+    return matchesSearch && matchesTipo && matchesFecha && matchesCreador;
   });
+
+  const hayFiltros = Boolean(searchTerm || filterTipo || filterAnio || filterMes || filterCreador);
+  const limpiarFiltros = () => {
+    setFilterCreador('');
+    setSearchTerm('');
+    setFilterTipo('');
+    setFilterAnio('');
+    setFilterMes('');
+  };
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -293,9 +368,9 @@ const Reportes = () => {
     }
   };
 
-  const ReportModal = ({ isOpen, onClose, onGenerate, loading }) => {
-    const [mes, setMes] = useState(new Date().getMonth() + 1);
-    const [anio, setAnio] = useState(new Date().getFullYear());
+  const ReportModal = ({ isOpen, onClose, onGenerate, loading, mesInicial, anioInicial }) => {
+    const [mes, setMes] = useState(mesInicial || new Date().getMonth() + 1);
+    const [anio, setAnio] = useState(anioInicial || new Date().getFullYear());
     const mesesLista = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
     if (!isOpen) return null;
@@ -375,8 +450,8 @@ const Reportes = () => {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
-          <div className="mb-6 flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
+          <div className="mb-6 flex flex-col md:flex-row md:flex-wrap gap-4">
+            <div className="flex-1 md:min-w-[260px] relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input type="text" placeholder="Buscar por título, institución o país..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:border-[#967292] outline-none" />
             </div>
@@ -384,6 +459,29 @@ const Reportes = () => {
               <option value="">Todos los tipos</option>
               {tipos.map(tipo => (<option key={tipo} value={tipo}>{getTipoLabel(tipo)}</option>))}
             </select>
+            <select value={filterAnio} onChange={(e) => cambiarAnio(e.target.value)} aria-label="Filtrar por año en que se añadió" className="px-4 py-3 border border-gray-200 rounded-xl">
+              <option value="">Todos los años</option>
+              {anios.map(anio => (<option key={anio} value={anio}>{anio}</option>))}
+            </select>
+            <select value={filterMes} onChange={(e) => setFilterMes(e.target.value)} aria-label="Filtrar por mes en que se añadió" className="px-4 py-3 border border-gray-200 rounded-xl">
+              <option value="">Todos los meses</option>
+              {meses.map(mes => (<option key={mes.value} value={mes.value}>{mes.label}</option>))}
+            </select>
+            {user?.rol !== 'auxiliar' && creadores.length > 0 && (
+              <select value={filterCreador} onChange={(e) => setFilterCreador(e.target.value)} aria-label="Filtrar por quién registró la beca" className="px-4 py-3 border border-gray-200 rounded-xl">
+                <option value="">Registradas por todos</option>
+                {creadores.map(c => (<option key={c.value} value={c.value}>{c.label}</option>))}
+              </select>
+            )}
+            {hayFiltros && (
+              <button onClick={limpiarFiltros} className="px-4 py-3 text-[#967292] font-bold text-xs uppercase tracking-wider hover:bg-gray-50 rounded-xl transition-all">
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+
+          <div className="mb-4 text-sm text-gray-500">
+            {filteredBecas.length} {filteredBecas.length === 1 ? 'beca' : 'becas'} en total
           </div>
 
           <div className="overflow-x-auto">
@@ -453,7 +551,14 @@ const Reportes = () => {
           )}
         </motion.div>
       </div>
-      <ReportModal isOpen={showReportModal} onClose={() => setShowReportModal(false)} onGenerate={generatePDF} loading={reportLoading} />
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        onGenerate={generatePDF}
+        loading={reportLoading}
+        mesInicial={filterMes ? Number(filterMes) : null}
+        anioInicial={filterAnio ? Number(filterAnio) : null}
+      />
     </div>
   );
 };
