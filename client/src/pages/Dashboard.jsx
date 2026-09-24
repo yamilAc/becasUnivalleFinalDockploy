@@ -88,9 +88,11 @@ const Dashboard = () => {
       const convData = (graficos.convocatorias || []).map(conv => ({
         id: conv.id,
         titulo: conv.titulo,
+        institucion: conv.institucion,
+        pais: conv.pais,
+        tipo: conv.tipo,
         fecha_cierre: conv.fecha_cierre,
-        plazas_disponibles: conv.plazas_disponibles,
-        estado: conv.estado || (new Date(conv.fecha_cierre) >= new Date() ? 'activa' : 'proxima')
+        created_at: conv.created_at
       }));
       
       setConvocatorias(convData);
@@ -116,6 +118,14 @@ const Dashboard = () => {
   };
 
   const coloresNivel = opportunityChartColors;
+
+  // Fechas vacías o inválidas no se muestran (evita el "31/12/1969")
+  const formatFecha = (valor) => {
+    if (!valor) return null;
+    const fecha = new Date(valor);
+    if (isNaN(fecha.getTime()) || fecha.getFullYear() < 1990) return null;
+    return fecha.toLocaleDateString('es-ES');
+  };
 
   // Componente StatCard mejorado con Ã­conos profesionales
   const StatCard = ({ title, value, color, delay, icon: IconComponent }) => (
@@ -266,7 +276,7 @@ const Dashboard = () => {
           </motion.div>
         </div>
 
-        {/* Convocatorias Recientes */}
+        {/* Oportunidades añadidas recientemente */}
         <div className="mb-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -276,9 +286,9 @@ const Dashboard = () => {
           >
             <div>
               <h2 className="text-[#967292] font-black uppercase italic tracking-widest text-[11px] mb-2">
-                Total Convocatorias 
+                Añadidas recientemente
               </h2>
-              <p className="text-gray-500 text-sm">Gestión de becas disponibles</p>
+              <p className="text-gray-500 text-sm">Últimas oportunidades publicadas</p>
             </div>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -292,42 +302,53 @@ const Dashboard = () => {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {convocatorias.map((conv, index) => (
-              <motion.div
-                key={conv.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 + index * 0.1 }}
-                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 transition-all"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <Calendar size={24} strokeWidth={1.5} className="text-[#967292]" />
-                  <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-full ${
-                    conv.estado === 'activa' 
-                      ? 'bg-[#AF93AC]/30 text-[#614B59]' 
-                      : 'bg-[#B59BB2]/35 text-[#614B59]'
-                  }`}>
-                    {conv.estado === 'activa' ? 'Activa' : 'Próxima'} 
-                  </span>
-                </div>
-                <h3 className="font-black text-gray-800 text-sm mb-2 line-clamp-2">{conv.titulo}</h3>
-                <div className="flex items-center gap-1 text-[10px] text-gray-400 mb-3">
-                  <Clock size={12} strokeWidth={1.5} />
-                  <span>Cierre: {new Date(conv.fecha_cierre).toLocaleDateString('es-ES')}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[9px] font-bold text-gray-600">
-                    Plazas: {conv.plazas_disponibles || 'N/A'}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
+            {convocatorias.map((conv, index) => {
+              const tipoInfo = getOpportunityType(conv.tipo);
+              const fechaCierre = formatFecha(conv.fecha_cierre);
+              const fechaAgregada = formatFecha(conv.created_at);
+              return (
+                <motion.div
+                  key={conv.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 + index * 0.1 }}
+                  className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 transition-all flex flex-col"
+                >
+                  <div className="flex justify-between items-start mb-4 gap-2">
+                    <div className="text-[#967292]">{getBecaIcon(conv.tipo)}</div>
+                    <span className="text-[8px] font-black uppercase px-2 py-1 rounded-full bg-[#B59BB2]/35 text-[#614B59]">
+                      {tipoInfo.label || conv.tipo || 'Oportunidad'}
+                    </span>
+                  </div>
+                  <h3 className="font-black text-gray-800 text-sm mb-1 line-clamp-2">{conv.titulo}</h3>
+                  {(conv.institucion || conv.pais) && (
+                    <p className="text-[11px] text-gray-500 mb-3 line-clamp-1">
+                      {[conv.institucion, conv.pais].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
+                  <div className="mt-auto space-y-1">
+                    {fechaAgregada && (
+                      <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                        <Calendar size={12} strokeWidth={1.5} />
+                        <span>Añadida: {fechaAgregada}</span>
+                      </div>
+                    )}
+                    {fechaCierre && (
+                      <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                        <Clock size={12} strokeWidth={1.5} />
+                        <span>Cierre: {fechaCierre}</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
-          
+
           {convocatorias.length === 0 && (
             <div className="text-center py-10 bg-white rounded-2xl">
               <Calendar size={48} strokeWidth={1} className="text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-400 text-sm">No hay convocatorias activas en este momento</p>
+              <p className="text-gray-400 text-sm">Todavía no hay oportunidades registradas</p>
             </div>
           )}
         </div>
