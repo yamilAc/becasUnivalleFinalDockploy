@@ -135,3 +135,8 @@ html {
 .animate-practicas-carousel:hover {
   animation-play-state: paused;
 }
+/* Oculta el "ojo" propio de Edge en los campos de contraseña (ya tenemos el nuestro) */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}

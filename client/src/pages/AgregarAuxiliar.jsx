@@ -60,7 +60,7 @@ const InputField = ({
           onChange={handleChange}
           onBlur={handleBlur}
           placeholder={placeholder}
-          className={`w-full p-4 ${Icon ? 'pl-12' : 'pl-4'} pr-12 bg-[#F4F4F4] border-2 rounded-[20px] focus:border-[#967292] outline-none transition-all shadow-sm text-sm ${
+          className={`w-full p-4 ${Icon ? 'pl-12' : 'pl-4'} ${isPasswordField ? 'pr-20' : 'pr-12'} bg-[#F4F4F4] border-2 rounded-[20px] focus:border-[#967292] outline-none transition-all shadow-sm text-sm ${
             isTouched && error 
               ? 'border-red-300 bg-red-50' 
               : isTouched && !error && value
@@ -71,8 +71,10 @@ const InputField = ({
         {isPassword && (
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#967292] transition-colors"
+            aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            className="absolute z-10 right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#967292] transition-colors"
           >
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
@@ -80,14 +82,18 @@ const InputField = ({
         {isConfirmPassword && (
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#967292] transition-colors"
+            aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            className="absolute z-10 right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#967292] transition-colors"
           >
             {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         )}
         {isTouched && !error && value && (
-          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+          // En los campos de contraseña el check va a la izquierda del ojo,
+          // y nunca bloquea los clics (antes tapaba el botón del ojo)
+          <div className={`absolute ${isPasswordField ? 'right-11' : 'right-4'} top-1/2 transform -translate-y-1/2 pointer-events-none`}>
             <CheckCircle className="w-4 h-4 text-green-500" />
           </div>
         )}
