@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { 
   UserPlus, 
   Mail, 
@@ -205,28 +204,30 @@ const PhotoUpload = ({
 // ============================================
 // COMPONENTE PRINCIPAL
 // ============================================
-const AgregarAuxiliar = () => {
-  const navigate = useNavigate();
+// auxiliar: si viene, el formulario edita a ese auxiliar; si no, crea uno nuevo.
+// onDone(mensaje): se llama al guardar. onCancel(): al cancelar.
+const AgregarAuxiliar = ({ auxiliar = null, onDone, onCancel }) => {
+  const esEdicion = Boolean(auxiliar);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const fileInputRef = useRef(null);
   
   const [formData, setFormData] = useState({
-    nombre: '',
-    email: '',
+    nombre: auxiliar?.nombre || '',
+    email: auxiliar?.email || '',
     password: '',
     confirmPassword: '',
     rol: 'auxiliar',
-    telefono: '',
-    departamento: '',
+    telefono: auxiliar?.telefono || '',
+    departamento: auxiliar?.departamento || '',
     foto: null,
-    fotoPreview: null
+    fotoPreview: auxiliar?.foto_perfil || null,
+    quitarFoto: false
   });
   
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
-  const [success, setSuccess] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
   // Validaciones en tiempo real
@@ -235,7 +236,7 @@ const AgregarAuxiliar = () => {
       case 'nombre':
         if (!value) return 'El nombre es requerido';
         if (value.length < 3) return 'Mínimo 3 caracteres';
-        if (!/^[a-zA-ZáéíóúñÑ\s]+$/.test(value)) return 'Solo letras y espacios';
+        if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(value)) return 'Solo letras y espacios';
         return '';
       case 'email':
         if (!value) return 'El email es requerido';
@@ -245,12 +246,14 @@ const AgregarAuxiliar = () => {
         }
         return '';
       case 'password':
+        if (!value && esEdicion) return '';
         if (!value) return 'La contraseña es requerida';
         if (value.length < 6) return 'Mínimo 6 caracteres';
         if (!/(?=.*[A-Z])/.test(value)) return 'Al menos una mayúscula';
         if (!/(?=.*[0-9])/.test(value)) return 'Al menos un número';
         return '';
       case 'confirmPassword':
+        if (!value && esEdicion && !formData.password) return '';
         if (!value) return 'Confirma la contraseña';
         if (value !== formData.password) return 'Las contraseñas no coinciden';
         return '';
@@ -282,7 +285,8 @@ const AgregarAuxiliar = () => {
       setFormData(prev => ({
         ...prev,
         foto: file,
-        fotoPreview: reader.result
+        fotoPreview: reader.result,
+        quitarFoto: false
       }));
       setErrors(prev => ({ ...prev, foto: '' }));
     };
@@ -319,7 +323,8 @@ const AgregarAuxiliar = () => {
     setFormData(prev => ({
       ...prev,
       foto: null,
-      fotoPreview: null
+      fotoPreview: null,
+      quitarFoto: true
     }));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -347,8 +352,12 @@ const AgregarAuxiliar = () => {
     
     if (!formData.nombre) newErrors.nombre = 'El nombre es requerido';
     if (!formData.email) newErrors.email = 'El email es requerido';
-    if (!formData.password) newErrors.password = 'La contraseña es requerida';
-    if (!formData.confirmPassword) newErrors.confirmPassword = 'Confirma la contraseña';
+    if (!formData.password && !esEdicion) newErrors.password = 'La contraseña es requerida';
+    if (!formData.confirmPassword && (!esEdicion || formData.password)) newErrors.confirmPassword = 'Confirma la contraseña';
+    const errorNombre = validateField('nombre', formData.nombre);
+    if (errorNombre) newErrors.nombre = errorNombre;
+    const errorTelefono = validateField('telefono', formData.telefono);
+    if (errorTelefono) newErrors.telefono = errorTelefono;
     
     if (formData.email && !formData.email.endsWith('@aux.univalle.edu')) {
       newErrors.email = 'Debe ser un email @aux.univalle.edu';
@@ -374,7 +383,8 @@ const AgregarAuxiliar = () => {
         nombre: true,
         email: true,
         password: true,
-        confirmPassword: true
+        confirmPassword: true,
+        telefono: true
       });
       return;
     }
@@ -384,26 +394,28 @@ const AgregarAuxiliar = () => {
     try {
       const formDataToSend = new FormData();
       formDataToSend.append('nombre', formData.nombre);
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('password', formData.password);
+      formDataToSend.append('email', formData.email.trim().toLowerCase());
+      if (formData.password) formDataToSend.append('password', formData.password);
       formDataToSend.append('telefono', formData.telefono || '');
       formDataToSend.append('departamento', formData.departamento || '');
       
       if (formData.foto) {
         formDataToSend.append('foto', formData.foto);
+      } else if (esEdicion && formData.quitarFoto) {
+        formDataToSend.append('quitarFoto', 'true');
       }
-      
-      await auxiliarService.create(formDataToSend);
-      
+
+      if (esEdicion) {
+        await auxiliarService.update(auxiliar.id, formDataToSend);
+      } else {
+        await auxiliarService.create(formDataToSend);
+      }
+
       setLoading(false);
-      setSuccess(true);
-      
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
+      onDone?.(esEdicion ? 'Auxiliar actualizado correctamente' : 'Auxiliar registrado correctamente');
     } catch (error) {
-      console.error('Error al registrar auxiliar:', error);
-      alert(error.message || 'Error al registrar auxiliar');
+      console.error('Error al guardar auxiliar:', error);
+      setErrors(prev => ({ ...prev, general: error.message || 'Error al guardar auxiliar' }));
       setLoading(false);
     }
   };
@@ -442,36 +454,12 @@ const AgregarAuxiliar = () => {
     }
   };
 
-  // Mensaje de éxito
-  if (success) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="min-h-screen flex items-center justify-center page-surface"
-      >
-        <div className="text-center">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 15 }}
-            className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"
-          >
-            <CheckCircle className="w-12 h-12 text-green-500" />
-          </motion.div>
-          <h2 className="text-2xl font-black text-gray-800 mb-2">¡Auxiliar Registrado!</h2>
-          <p className="text-gray-500">Redirigiendo al dashboard...</p>
-        </div>
-      </motion.div>
-    );
-  }
-
   return (
     <motion.div
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="min-h-screen page-surface py-10 px-4 flex justify-center items-center"
+      className="py-2 flex justify-center items-center"
     >
       <motion.div 
         variants={slideAnimation}
@@ -508,9 +496,11 @@ const AgregarAuxiliar = () => {
             >
               <UserPlus className="w-10 h-10 text-white" />
             </motion.div>
-            <h2 className="text-3xl font-black uppercase tracking-tighter italic">Registrar Nuevo Auxiliar</h2>
+            <h2 className="text-3xl font-black uppercase tracking-tighter italic">
+              {esEdicion ? 'Editar Auxiliar' : 'Registrar Nuevo Auxiliar'}
+            </h2>
             <p className="text-white/60 text-[10px] uppercase mt-2 tracking-[0.3em] font-bold">
-              Complete todos los campos requeridos
+              {esEdicion ? 'Deja la contraseña vacía para no cambiarla' : 'Complete todos los campos requeridos'}
             </p>
           </div>
         </motion.div>
@@ -609,10 +599,11 @@ const AgregarAuxiliar = () => {
 
             {/* Contraseña */}
             <InputField
-              label="CONTRASEÑA TEMPORAL"
+              label={esEdicion ? 'NUEVA CONTRASEÑA (OPCIONAL)' : 'CONTRASEÑA TEMPORAL'}
               name="password"
               type="password"
               icon={Lock}
+              required={!esEdicion}
               placeholder="••••••••"
               formData={formData}
               errors={errors}
@@ -631,6 +622,7 @@ const AgregarAuxiliar = () => {
               name="confirmPassword"
               type="password"
               icon={Lock}
+              required={!esEdicion}
               placeholder="••••••••"
               formData={formData}
               errors={errors}
@@ -663,6 +655,13 @@ const AgregarAuxiliar = () => {
             </div>
           </motion.div>
 
+          {errors.general && (
+            <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-xs font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {errors.general}
+            </div>
+          )}
+
           {/* Botones */}
           <motion.div 
             variants={inputVariants}
@@ -670,7 +669,7 @@ const AgregarAuxiliar = () => {
           >
             <motion.button
               type="button"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => onCancel?.()}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="text-gray-400 font-bold uppercase text-[10px] tracking-widest hover:text-[#967292] transition-colors"
@@ -693,7 +692,7 @@ const AgregarAuxiliar = () => {
               ) : (
                 <span className="relative z-10 flex items-center gap-2">
                   <UserPlus className="w-4 h-4" />
-                  Registrar Auxiliar
+                  {esEdicion ? 'Guardar cambios' : 'Registrar Auxiliar'}
                 </span>
               )}
               <motion.div

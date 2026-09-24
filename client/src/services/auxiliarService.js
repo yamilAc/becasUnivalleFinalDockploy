@@ -33,6 +33,21 @@ const auxiliarService = {
       throw error.response?.data || { message: 'Error al crear auxiliar' };
     }
   },
+  // Editar auxiliar
+  update: async (id, formData) => {
+    try {
+      const response = await axios.put(`${API_URL}/auxiliares/${id}`, formData, {
+        headers: {
+          ...getAuthHeader().headers,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Error al actualizar auxiliar' };
+    }
+  },
+
   // Eliminar auxiliar
   delete: async (id) => {
     try {

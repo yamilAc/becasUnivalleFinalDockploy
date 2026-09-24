@@ -6,7 +6,7 @@ import Sidebar from './components/Sidebar';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import RegistroBeca from './pages/RegistroBeca';
-import AgregarAuxiliar from './pages/AgregarAuxiliar';
+import Auxiliares from './pages/Auxiliares';
 import Reportes from './pages/Reportes';
 import Convocatorias from './pages/Convocatorias'; // ← IMPORTAR
 import AnimatedPage from './components/AnimatedPage';
@@ -61,11 +61,11 @@ function App() {
               </ProtectedRoute>
             } />
 
-            {/* Solo Docente (admin) puede agregar auxiliares */}
+            {/* Solo Docente (admin) puede ver, agregar, editar y eliminar auxiliares */}
             <Route path="/dashboard/agregar-auxiliar" element={
               <ProtectedRoute allowedRoles={['docente']}>
                 <AnimatedPage>
-                  <AgregarAuxiliar />
+                  <Auxiliares />
                 </AnimatedPage>
               </ProtectedRoute>
             } />
