@@ -392,7 +392,7 @@ const handleCardClick = async (beca) => {
             </div>
             
             <div className="mt-4 text-sm text-gray-500">
-              Mostrando {currentItems.length} de {filteredConvocatorias.length} convocatorias
+              {filteredConvocatorias.length} {filteredConvocatorias.length === 1 ? 'convocatoria' : 'convocatorias'} en total
             </div>
           </motion.div>
 
