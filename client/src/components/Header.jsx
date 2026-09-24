@@ -11,7 +11,8 @@ const Header = ({ onMenuClick }) => {
 
   return (
     <header className="fixed top-0 left-0 md:left-32 right-0 z-[90] h-[70px] bg-[#454545] text-white shadow-md">
-      <div className="h-full px-4 md:px-8 flex items-center justify-between">
+      <div className="relative h-full px-4 md:px-8 flex items-center justify-between">
+
         <button
           type="button"
           onClick={onMenuClick}

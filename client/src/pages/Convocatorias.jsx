@@ -30,12 +30,44 @@ const Convocatorias = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipo, setFilterTipo] = useState('');
   const [filterEstado, setFilterEstado] = useState('');
+  const [filterAnio, setFilterAnio] = useState('');
+  const [filterMes, setFilterMes] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [user, setUser] = useState(null);
   const itemsPerPage = 12;
 
   // Tipos de becas
   const tipos = getOpportunityOptions();
+
+  // Año y mes en que se añadió cada oportunidad
+  const getFechaAgregada = (fecha) => {
+    if (!fecha) return null;
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) return null;
+    return { anio: String(d.getFullYear()), mes: String(d.getMonth() + 1) };
+  };
+
+  const NOMBRES_MESES = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+
+  // Años con oportunidades (del más reciente al más antiguo)
+  const anios = [...new Set(
+    convocatorias
+      .map(conv => getFechaAgregada(conv.created_at)?.anio)
+      .filter(Boolean)
+  )].sort((a, b) => b - a);
+
+  // Meses con oportunidades (dentro del año elegido, si hay uno)
+  const meses = [...new Set(
+    convocatorias
+      .map(conv => getFechaAgregada(conv.created_at))
+      .filter(f => f && (!filterAnio || f.anio === filterAnio))
+      .map(f => f.mes)
+  )]
+    .sort((a, b) => a - b)
+    .map(mes => ({ value: mes, label: NOMBRES_MESES[Number(mes) - 1] }));
 
   const estados = [
     { value: 'activa', label: 'Activas' },
@@ -50,7 +82,7 @@ const Convocatorias = () => {
 
   useEffect(() => {
     filterConvocatorias();
-  }, [searchTerm, filterTipo, filterEstado, convocatorias]);
+  }, [searchTerm, filterTipo, filterEstado, filterAnio, filterMes, convocatorias]);
 
   const loadConvocatorias = async () => {
   setLoading(true);
@@ -101,6 +133,14 @@ const Convocatorias = () => {
     
     if (filterTipo) {
       filtered = filtered.filter(conv => conv.tipo === filterTipo);
+    }
+
+    if (filterAnio || filterMes) {
+      filtered = filtered.filter(conv => {
+        const f = getFechaAgregada(conv.created_at);
+        if (!f) return false;
+        return (!filterAnio || f.anio === filterAnio) && (!filterMes || f.mes === filterMes);
+      });
     }
     
     if (filterEstado) {
@@ -288,6 +328,40 @@ const handleCardClick = async (beca) => {
                   <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
                 ))}
               </select>
+
+              <select
+                value={filterAnio}
+                onChange={(e) => {
+                  const anio = e.target.value;
+                  setFilterAnio(anio);
+                  // Si el mes elegido no tiene oportunidades en ese año, se limpia
+                  if (anio && filterMes && !convocatorias.some(conv => {
+                    const f = getFechaAgregada(conv.created_at);
+                    return f && f.anio === anio && f.mes === filterMes;
+                  })) {
+                    setFilterMes('');
+                  }
+                }}
+                aria-label="Filtrar por año en que se añadió"
+                className="px-4 py-3 border border-gray-200 rounded-xl focus:border-[#967292] outline-none transition-all"
+              >
+                <option value="">Todos los años</option>
+                {anios.map(anio => (
+                  <option key={anio} value={anio}>{anio}</option>
+                ))}
+              </select>
+
+              <select
+                value={filterMes}
+                onChange={(e) => setFilterMes(e.target.value)}
+                aria-label="Filtrar por mes en que se añadió"
+                className="px-4 py-3 border border-gray-200 rounded-xl focus:border-[#967292] outline-none transition-all"
+              >
+                <option value="">Todos los meses</option>
+                {meses.map(mes => (
+                  <option key={mes.value} value={mes.value}>{mes.label}</option>
+                ))}
+              </select>
               
               <select
                 value={filterEstado}
@@ -301,12 +375,14 @@ const handleCardClick = async (beca) => {
                 ))}
               </select>
               
-              {(searchTerm || filterTipo || filterEstado) && (
+              {(searchTerm || filterTipo || filterEstado || filterAnio || filterMes) && (
                 <button
                   onClick={() => {
                     setSearchTerm('');
                     setFilterTipo('');
                     setFilterEstado('');
+                    setFilterAnio('');
+                    setFilterMes('');
                   }}
                   className="px-4 py-3 text-[#967292] font-bold text-xs uppercase tracking-wider hover:bg-gray-50 rounded-xl transition-all"
                 >
@@ -336,6 +412,8 @@ const handleCardClick = async (beca) => {
                   setSearchTerm('');
                   setFilterTipo('');
                   setFilterEstado('');
+                  setFilterAnio('');
+                  setFilterMes('');
                 }}
                 className="mt-4 text-[#967292] font-bold text-sm"
               >

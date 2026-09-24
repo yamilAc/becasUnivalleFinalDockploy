@@ -70,6 +70,13 @@ const Sidebar = ({ isOpen, onClose }) => {
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
+        {/* Logo completo en la esquina superior izquierda (pantallas grandes) */}
+        <img
+          src="/logo-rrii.png"
+          alt="Dirección de Educación Internacional y Relaciones - Univalle"
+          className="hidden lg:block absolute left-4 top-[11px] h-12 w-auto max-w-none object-contain pointer-events-none select-none"
+        />
+
         <div className="h-full flex flex-col items-center py-5">
           <button
             type="button"
@@ -82,9 +89,9 @@ const Sidebar = ({ isOpen, onClose }) => {
 
           <div className="w-16 h-16 flex items-center justify-center mb-8">
             <img
-              src="/logo-univalle.png"
-              alt="Logo Univalle"
-              className="w-14 h-14 object-contain"
+              src="/logo-rrii-sello.png"
+              alt="Univalle - Dirección de Educación Internacional y Relaciones"
+              className="w-14 h-14 object-contain lg:invisible"
             />
           </div>
 
