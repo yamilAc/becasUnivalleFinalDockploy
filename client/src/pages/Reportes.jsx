@@ -18,6 +18,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import authService from '../services/authService';
 import becaService from '../services/becaService';
+import auxiliarService from '../services/auxiliarService';
 import { OPPORTUNITY_TYPES, getOpportunityType } from '../config/opportunityTypes';
 
 const Reportes = () => {
@@ -32,6 +33,7 @@ const Reportes = () => {
   const [filterAnio, setFilterAnio] = useState('');
   const [filterMes, setFilterMes] = useState('');
   const [filterCreador, setFilterCreador] = useState('');
+  const [auxiliares, setAuxiliares] = useState([]);
   const [user, setUser] = useState(null);
   const itemsPerPage = 10;
 
@@ -43,6 +45,12 @@ const Reportes = () => {
   useEffect(() => {
     if (user) {
       loadBecas();
+    }
+    // El docente también ve en el filtro a los auxiliares que aún no registraron becas
+    if (user?.rol === 'docente') {
+      auxiliarService.getAll()
+        .then(data => setAuxiliares(Array.isArray(data) ? data : []))
+        .catch(() => setAuxiliares([]));
     }
   }, [user]);
 
@@ -292,17 +300,18 @@ const Reportes = () => {
     .sort((a, b) => a - b)
     .map(mes => ({ value: mes, label: NOMBRES_MESES[Number(mes) - 1] }));
 
-  // Personas que registraron becas (docentes y auxiliares), por nombre
+  // Quienes registraron becas + todos los auxiliares (aunque aún no tengan becas), por nombre
   const creadores = Object.values(
-    becas.reduce((acc, beca) => {
+    auxiliares.reduce((acc, aux) => {
+      const id = String(aux.id);
+      if (!acc[id]) acc[id] = { value: id, label: (aux.nombre || '').trim() || `Usuario #${id}` };
+      return acc;
+    }, becas.reduce((acc, beca) => {
       if (beca.creado_por == null) return acc;
       const id = String(beca.creado_por);
-      if (!acc[id]) {
-        acc[id] = { value: id, label: (beca.creador_nombre || '').trim() || `Usuario #${id}`, total: 0 };
-      }
-      acc[id].total += 1;
+      if (!acc[id]) acc[id] = { value: id, label: (beca.creador_nombre || '').trim() || `Usuario #${id}` };
       return acc;
-    }, {})
+    }, {}))
   ).sort((a, b) => a.label.localeCompare(b.label, 'es'));
 
   const cambiarAnio = (anio) => {
