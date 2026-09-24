@@ -22,7 +22,9 @@ import {
   Plane,
   GraduationCap,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Building2,
+  ExternalLink
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -91,6 +93,8 @@ const Dashboard = () => {
         institucion: conv.institucion,
         pais: conv.pais,
         tipo: conv.tipo,
+        logo: conv.logo,
+        link_oficial: conv.link_oficial,
         fecha_cierre: conv.fecha_cierre,
         created_at: conv.created_at
       }));
@@ -125,6 +129,20 @@ const Dashboard = () => {
     const fecha = new Date(valor);
     if (isNaN(fecha.getTime()) || fecha.getFullYear() < 1990) return null;
     return fecha.toLocaleDateString('es-ES');
+  };
+
+  // Abrir la oportunidad (solo los estudiantes suman visitas, igual que en Convocatorias)
+  const abrirOportunidad = async (conv) => {
+    if (!conv.link_oficial) return;
+    const ventana = window.open(conv.link_oficial, '_blank', 'noopener');
+    if (user?.rol === 'estudiante') {
+      try {
+        await becaService.getById(conv.id);
+      } catch (err) {
+        console.error('Error registrando visita:', err);
+      }
+    }
+    return ventana;
   };
 
   // Componente StatCard mejorado con Ã­conos profesionales
@@ -304,41 +322,98 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {convocatorias.map((conv, index) => {
               const tipoInfo = getOpportunityType(conv.tipo);
+              const TipoIcon = tipoInfo.icon || GraduationCap;
               const fechaCierre = formatFecha(conv.fecha_cierre);
               const fechaAgregada = formatFecha(conv.created_at);
+              const tieneLink = Boolean(conv.link_oficial);
               return (
                 <motion.div
                   key={conv.id}
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.7 + index * 0.1 }}
-                  className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 transition-all flex flex-col"
+                  whileHover={tieneLink ? { y: -6 } : undefined}
+                  role={tieneLink ? 'link' : undefined}
+                  tabIndex={tieneLink ? 0 : undefined}
+                  title={tieneLink ? `Abrir ${conv.titulo}` : 'Esta oportunidad no tiene enlace'}
+                  onClick={() => abrirOportunidad(conv)}
+                  onKeyDown={(e) => {
+                    if (tieneLink && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      abrirOportunidad(conv);
+                    }
+                  }}
+                  className={`group relative bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 flex flex-col transition-shadow focus:outline-none focus-visible:ring-4 focus-visible:ring-[#967292]/40 ${
+                    tieneLink ? 'cursor-pointer hover:shadow-2xl' : 'cursor-default'
+                  }`}
                 >
-                  <div className="flex justify-between items-start mb-4 gap-2">
-                    <div className="text-[#967292]">{getBecaIcon(conv.tipo)}</div>
-                    <span className="text-[8px] font-black uppercase px-2 py-1 rounded-full bg-[#B59BB2]/35 text-[#614B59]">
-                      {tipoInfo.label || conv.tipo || 'Oportunidad'}
+                  {/* Franja de color según el tipo */}
+                  <div className={`bg-gradient-to-r ${tipoInfo.gradient || 'from-[#967292] to-[#9C7A98]'} h-20 px-5 pt-4 flex justify-between items-start`}>
+                    <span className="inline-flex items-center gap-1.5 bg-white/25 backdrop-blur-sm text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full">
+                      <TipoIcon size={12} strokeWidth={2.5} />
+                      {tipoInfo.label || 'Oportunidad'}
+                    </span>
+                    <span className="bg-white text-[#614B59] text-[9px] font-black uppercase px-2 py-1 rounded-full shadow">
+                      Nuevo
                     </span>
                   </div>
-                  <h3 className="font-black text-gray-800 text-sm mb-1 line-clamp-2">{conv.titulo}</h3>
-                  {(conv.institucion || conv.pais) && (
-                    <p className="text-[11px] text-gray-500 mb-3 line-clamp-1">
-                      {[conv.institucion, conv.pais].filter(Boolean).join(' · ')}
-                    </p>
-                  )}
-                  <div className="mt-auto space-y-1">
-                    {fechaAgregada && (
-                      <div className="flex items-center gap-1 text-[10px] text-gray-400">
-                        <Calendar size={12} strokeWidth={1.5} />
-                        <span>Añadida: {fechaAgregada}</span>
+
+                  {/* Logo sobre la franja */}
+                  <div className="px-5 -mt-8">
+                    <div className="w-16 h-16 rounded-2xl bg-white shadow-md ring-4 ring-white flex items-center justify-center overflow-hidden">
+                      {conv.logo ? (
+                        <img
+                          src={conv.logo}
+                          alt={conv.institucion || conv.titulo}
+                          loading="lazy"
+                          className="w-full h-full object-contain p-1.5"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        className={`w-full h-full items-center justify-center bg-gradient-to-br ${tipoInfo.gradient || 'from-[#967292] to-[#9C7A98]'}`}
+                        style={{ display: conv.logo ? 'none' : 'flex' }}
+                      >
+                        <Building2 size={26} strokeWidth={1.5} className="text-white" />
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="px-5 pt-3 pb-5 flex flex-col flex-1">
+                    <h3 className="font-black text-gray-800 text-sm mb-1 line-clamp-2 group-hover:text-[#967292] transition-colors">
+                      {conv.titulo}
+                    </h3>
+                    {(conv.institucion || conv.pais) && (
+                      <p className="text-[11px] text-gray-500 mb-3 line-clamp-2">
+                        {[conv.institucion, conv.pais].filter(Boolean).join(' · ')}
+                      </p>
                     )}
-                    {fechaCierre && (
-                      <div className="flex items-center gap-1 text-[10px] text-gray-400">
-                        <Clock size={12} strokeWidth={1.5} />
-                        <span>Cierre: {fechaCierre}</span>
-                      </div>
-                    )}
+                    <div className="mt-auto space-y-1 mb-4">
+                      {fechaAgregada && (
+                        <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                          <Calendar size={12} strokeWidth={1.5} />
+                          <span>Añadida: {fechaAgregada}</span>
+                        </div>
+                      )}
+                      {fechaCierre && (
+                        <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                          <Clock size={12} strokeWidth={1.5} />
+                          <span>Cierre: {fechaCierre}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="border-t border-gray-100 pt-3 flex justify-end">
+                      {tieneLink ? (
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#967292] flex items-center gap-1 group-hover:gap-2 transition-all">
+                          Ver oportunidad <ExternalLink size={12} strokeWidth={2.5} />
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-gray-300">Sin enlace disponible</span>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               );

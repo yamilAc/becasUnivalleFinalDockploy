@@ -181,7 +181,7 @@ static async getEstadisticas() {
   // Obtener oportunidades añadidas recientemente
   static async getConvocatoriasRecientes(limit = 4) {
     const [rows] = await pool.execute(
-      `SELECT id, titulo, institucion, pais, tipo, fecha_cierre, created_at
+      `SELECT id, titulo, institucion, pais, tipo, logo, link_oficial, fecha_cierre, created_at
        FROM becas
        WHERE activo = 1
        ORDER BY created_at DESC, id DESC
