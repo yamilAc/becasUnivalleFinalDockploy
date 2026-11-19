@@ -29,6 +29,28 @@ const upload = multer({
   }
 });
 
+// Nombres visibles de las columnas, para explicar qué campo falló.
+const NOMBRES_CAMPOS = {
+  tipo: 'Tipo', titulo: 'Título', institucion: 'Institución', pais: 'País',
+  area: 'Área', descripcion: 'Descripción', link_oficial: 'Enlace oficial', logo: 'Logo'
+};
+
+// Convierte errores conocidos de MySQL en un mensaje entendible (400).
+// Devuelve null si el error no es de datos del formulario.
+const mensajeErrorDatos = (error) => {
+  if (error && error.code === 'ER_DATA_TOO_LONG') {
+    const columna = (error.sqlMessage || '').match(/column '([^']+)'/)?.[1];
+    const campo = NOMBRES_CAMPOS[columna] || columna || 'un campo';
+    return `El campo "${campo}" es demasiado largo. Acórtalo e inténtalo de nuevo.`;
+  }
+  if (error && error.code === 'ER_BAD_NULL_ERROR') {
+    const columna = (error.sqlMessage || '').match(/Column '([^']+)'/)?.[1];
+    const campo = NOMBRES_CAMPOS[columna] || columna || 'un campo obligatorio';
+    return `Falta completar el campo "${campo}".`;
+  }
+  return null;
+};
+
 // Obtener todas las becas
 const getAllBecas = async (req, res) => {
   try {
@@ -127,6 +149,9 @@ const createBeca = async (req, res) => {
     res.status(201).json({ message: 'Beca creada exitosamente', id: becaId });
   } catch (error) {
     console.error(error);
+    if (req.file) require('fs').unlink(req.file.path, () => {});
+    const mensaje = mensajeErrorDatos(error);
+    if (mensaje) return res.status(400).json({ message: mensaje });
     res.status(500).json({ message: 'Error al crear beca' });
   }
 };
@@ -162,6 +187,8 @@ const updateBeca = async (req, res) => {
     }
   } catch (error) {
     console.error(error);
+    const mensaje = mensajeErrorDatos(error);
+    if (mensaje) return res.status(400).json({ message: mensaje });
     res.status(500).json({ message: 'Error al actualizar beca' });
   }
 };

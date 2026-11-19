@@ -115,6 +115,9 @@ const paisesLista = [
 // ============================================
 // COMPONENTE INPUT FIELD
 // ============================================
+// Largo máximo de cada campo (igual que las columnas de la base de datos).
+const MAX_LENGTHS = { titulo: 500, institucion: 500, area: 255, descripcion: 15000, linkOficial: 1000 };
+
 const InputField = ({ 
   label, name, type = "text", icon: Icon, required = true, 
   placeholder, options, rows, formData, errors, touched, 
@@ -140,7 +143,7 @@ const InputField = ({
         {isTextarea ? (
           <textarea
             name={name} value={value} onChange={handleChange} onBlur={handleBlur}
-            placeholder={placeholder} rows={rows}
+            placeholder={placeholder} rows={rows} maxLength={MAX_LENGTHS[name]}
             className={`w-full p-4 bg-[#F4F4F4] border-2 rounded-[20px] focus:border-[#967292] outline-none transition-all shadow-sm text-sm resize-none ${
               isTouched && error ? 'border-red-300 bg-red-50' : 'border-gray-100'
             }`}
@@ -158,7 +161,7 @@ const InputField = ({
         ) : (
           <input
             type={type} name={name} value={value} onChange={handleChange} onBlur={handleBlur}
-            placeholder={placeholder}
+            placeholder={placeholder} maxLength={MAX_LENGTHS[name]}
             className={`w-full p-4 ${Icon ? 'pl-12' : 'pl-4'} pr-12 bg-[#F4F4F4] border-2 rounded-[20px] focus:border-[#967292] outline-none transition-all shadow-sm text-sm ${
               isTouched && error ? 'border-red-300 bg-red-50' : 'border-gray-100'
             }`}
